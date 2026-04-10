@@ -62,7 +62,7 @@ def ensure_session_defaults() -> None:
         "configured_root": guessed_root,
         "selected_dataset": "",
         "sim_anchor_day": pd.Timestamp.now().strftime("%Y-%m-%d"),
-        "zhidian_app_url": os.getenv("APP_ZHIDIAN_URL", "http://localhost:8501").strip(),
+        "zhidian_app_url": os.getenv("APP_ZHIDIAN_URL", "https://zhi-dian-xian-feng.streamlit.app").strip(),
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -434,7 +434,7 @@ def render_runtime_monitor(snapshot: List[Dict[str, object]]) -> None:
 def render_top_settings() -> None:
     with st.popover("☰ 设置", use_container_width=False):
         st.markdown("### 云端设置")
-        zhidian_url = st.text_input("用户展示页地址", value=st.session_state.zhidian_app_url, placeholder="例如：http://localhost:8501")
+        zhidian_url = st.text_input("用户展示页地址", value=st.session_state.zhidian_app_url, placeholder="例如：https://zhi-dian-xian-feng.streamlit.app")
         st.session_state.zhidian_app_url = zhidian_url.strip()
 
         root_dir = st.text_input("数据目录", value=st.session_state.configured_root)
