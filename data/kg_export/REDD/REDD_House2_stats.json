@@ -1,0 +1,59 @@
+{
+  "user": {
+    "name": "用户2",
+    "avg_kwh": 3.1248104868039164,
+    "days": 16
+  },
+  "appliances": [
+    {
+      "name": "冰箱",
+      "weekday_periods": "[01:00,01:15]",
+      "weekend_periods": "[19:30,19:45]、[21:15,21:30]、[23:00,23:15]",
+      "rated_power": 120.19342004189649
+    },
+    {
+      "name": "厨房插座",
+      "weekday_periods": "[12:45,13:15]、[14:15,14:30]",
+      "weekend_periods": "[13:45,14:00]",
+      "rated_power": 126.51149025369159
+    },
+    {
+      "name": "微波炉",
+      "weekday_periods": "[00:30,00:45]",
+      "weekend_periods": "[00:15,01:15]、[23:30,24:00]",
+      "rated_power": 101.59664644213522
+    },
+    {
+      "name": "洗碗机",
+      "weekday_periods": "[14:15,15:30]",
+      "weekend_periods": "[01:45,03:00]、[14:15,15:45]",
+      "rated_power": 475.0949276403809
+    },
+    {
+      "name": "炉灶",
+      "weekday_periods": "[17:00,18:15]、[20:30,21:45]",
+      "weekend_periods": "",
+      "rated_power": 138.21640895634945
+    },
+    {
+      "name": "照明",
+      "weekday_periods": "[00:00,00:30]",
+      "weekend_periods": "[00:15,00:30]、[23:45,24:00]",
+      "rated_power": 110.29707902713305
+    }
+  ],
+  "edges": [
+    {
+      "source": "厨房插座",
+      "target": "洗碗机",
+      "weekday_overlap": "[14:15,14:30]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "微波炉",
+      "target": "照明",
+      "weekday_overlap": "",
+      "weekend_overlap": "[00:15,00:30]、[23:45,24:00]"
+    }
+  ]
+}

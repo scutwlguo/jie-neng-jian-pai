@@ -1,0 +1,179 @@
+{
+  "user": {
+    "name": "用户6",
+    "avg_kwh": 7.185237187238836,
+    "days": 19
+  },
+  "appliances": [
+    {
+      "name": "冰箱",
+      "weekday_periods": "[11:15,11:30]、[11:45,12:00]、[13:30,13:45]",
+      "weekend_periods": "[02:00,02:30]、[03:15,03:45]、[20:45,21:00]",
+      "rated_power": 118.8616596134774
+    },
+    {
+      "name": "厨房插座",
+      "weekday_periods": "[00:30,01:00]、[01:45,02:15]、[02:30,02:45]、[05:00,06:15]、[07:45,09:45]",
+      "weekend_periods": "[02:15,02:30]、[23:00,23:30]",
+      "rated_power": 129.17397226782668
+    },
+    {
+      "name": "未知插座",
+      "weekday_periods": "[02:15,02:45]、[11:00,11:30]",
+      "weekend_periods": "[02:15,02:45]、[23:45,24:00]",
+      "rated_power": 133.79274622124478
+    },
+    {
+      "name": "浴室插座",
+      "weekday_periods": "[10:30,11:00]",
+      "weekend_periods": "",
+      "rated_power": 148.61614820907798
+    },
+    {
+      "name": "炉灶",
+      "weekday_periods": "[11:00,11:15]",
+      "weekend_periods": "[12:15,12:45]",
+      "rated_power": 281.00117537777015
+    },
+    {
+      "name": "烘干机",
+      "weekday_periods": "[23:00,23:30]",
+      "weekend_periods": "",
+      "rated_power": 124.8129770992366
+    },
+    {
+      "name": "照明",
+      "weekday_periods": "[05:30,14:00]",
+      "weekend_periods": "[00:00,07:15]",
+      "rated_power": 113.52255320998238
+    },
+    {
+      "name": "电子设备",
+      "weekday_periods": "[07:15,09:30]",
+      "weekend_periods": "[15:45,18:00]",
+      "rated_power": 392.40790669653745
+    },
+    {
+      "name": "电暖器",
+      "weekday_periods": "[01:45,02:00]",
+      "weekend_periods": "[01:30,02:45]、[03:15,04:15]、[12:00,12:15]、[13:00,13:15]",
+      "rated_power": 56.86939675019399
+    },
+    {
+      "name": "空调",
+      "weekday_periods": "[03:30,03:45]",
+      "weekend_periods": "[00:00,01:15]、[03:15,03:45]、[04:15,07:15]、[08:00,08:15]、[10:15,10:45]、[13:00,13:30]",
+      "rated_power": 1104.987590687183
+    }
+  ],
+  "edges": [
+    {
+      "source": "浴室插座",
+      "target": "照明",
+      "weekday_overlap": "[10:30,11:00]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "厨房插座",
+      "target": "电暖器",
+      "weekday_overlap": "[01:45,02:00]",
+      "weekend_overlap": "[02:15,02:30]"
+    },
+    {
+      "source": "厨房插座",
+      "target": "电子设备",
+      "weekday_overlap": "[07:45,09:30]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "厨房插座",
+      "target": "照明",
+      "weekday_overlap": "[05:30,06:15]、[07:45,09:45]",
+      "weekend_overlap": "[02:15,02:30]"
+    },
+    {
+      "source": "厨房插座",
+      "target": "未知插座",
+      "weekday_overlap": "[02:30,02:45]",
+      "weekend_overlap": "[02:15,02:30]"
+    },
+    {
+      "source": "炉灶",
+      "target": "照明",
+      "weekday_overlap": "[11:00,11:15]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "照明",
+      "target": "空调",
+      "weekday_overlap": "",
+      "weekend_overlap": "[00:00,01:15]、[03:15,03:45]、[04:15,07:15]"
+    },
+    {
+      "source": "照明",
+      "target": "电暖器",
+      "weekday_overlap": "",
+      "weekend_overlap": "[01:30,02:45]、[03:15,04:15]"
+    },
+    {
+      "source": "照明",
+      "target": "电子设备",
+      "weekday_overlap": "[07:15,09:30]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "未知插座",
+      "target": "电暖器",
+      "weekday_overlap": "",
+      "weekend_overlap": "[02:15,02:45]"
+    },
+    {
+      "source": "未知插座",
+      "target": "照明",
+      "weekday_overlap": "[11:00,11:30]",
+      "weekend_overlap": "[02:15,02:45]"
+    },
+    {
+      "source": "未知插座",
+      "target": "炉灶",
+      "weekday_overlap": "[11:00,11:15]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "电暖器",
+      "target": "空调",
+      "weekday_overlap": "",
+      "weekend_overlap": "[03:15,03:45]、[13:00,13:15]"
+    },
+    {
+      "source": "冰箱",
+      "target": "空调",
+      "weekday_overlap": "",
+      "weekend_overlap": "[03:15,03:45]"
+    },
+    {
+      "source": "冰箱",
+      "target": "电暖器",
+      "weekday_overlap": "",
+      "weekend_overlap": "[02:00,02:30]、[03:15,03:45]"
+    },
+    {
+      "source": "冰箱",
+      "target": "照明",
+      "weekday_overlap": "[11:15,11:30]、[11:45,12:00]、[13:30,13:45]",
+      "weekend_overlap": "[02:00,02:30]、[03:15,03:45]"
+    },
+    {
+      "source": "冰箱",
+      "target": "未知插座",
+      "weekday_overlap": "[11:15,11:30]",
+      "weekend_overlap": "[02:15,02:30]"
+    },
+    {
+      "source": "冰箱",
+      "target": "厨房插座",
+      "weekday_overlap": "",
+      "weekend_overlap": "[02:15,02:30]"
+    }
+  ]
+}

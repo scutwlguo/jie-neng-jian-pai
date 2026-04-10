@@ -1,0 +1,167 @@
+{
+  "user": {
+    "name": "用户5",
+    "avg_kwh": 4.298734948639712,
+    "days": 9
+  },
+  "appliances": [
+    {
+      "name": "冰箱",
+      "weekday_periods": "[09:45,10:00]、[10:30,10:45]",
+      "weekend_periods": "[20:30,22:15]、[22:30,23:30]",
+      "rated_power": 122.78086935694489
+    },
+    {
+      "name": "厨房插座",
+      "weekday_periods": "[10:45,11:00]",
+      "weekend_periods": "",
+      "rated_power": 280.55552601382215
+    },
+    {
+      "name": "太阳能热泵",
+      "weekday_periods": "[11:00,11:45]",
+      "weekend_periods": "",
+      "rated_power": 203.07632333513823
+    },
+    {
+      "name": "微波炉",
+      "weekday_periods": "[00:00,00:30]",
+      "weekend_periods": "[22:15,24:00]",
+      "rated_power": 79.05135450955508
+    },
+    {
+      "name": "未知插座",
+      "weekday_periods": "[00:45,01:15]",
+      "weekend_periods": "",
+      "rated_power": 94.3504206128065
+    },
+    {
+      "name": "洗碗机",
+      "weekday_periods": "[00:00,00:30]、[23:00,24:00]",
+      "weekend_periods": "",
+      "rated_power": 686.5450664466229
+    },
+    {
+      "name": "浴室插座",
+      "weekday_periods": "[11:15,12:15]",
+      "weekend_periods": "",
+      "rated_power": 418.6285551134689
+    },
+    {
+      "name": "炉灶",
+      "weekday_periods": "[10:00,10:15]",
+      "weekend_periods": "[21:15,21:30]",
+      "rated_power": 239.57897285185774
+    },
+    {
+      "name": "照明",
+      "weekday_periods": "[09:45,10:45]",
+      "weekend_periods": "[20:30,24:00]",
+      "rated_power": 187.62312891589093
+    },
+    {
+      "name": "电子设备",
+      "weekday_periods": "[01:15,02:30]",
+      "weekend_periods": "[20:15,21:00]、[21:15,22:15]",
+      "rated_power": 71.48203520326288
+    },
+    {
+      "name": "电暖器",
+      "weekday_periods": "[00:30,02:45]、[07:45,09:00]、[09:45,10:30]",
+      "weekend_periods": "",
+      "rated_power": 1211.094130141616
+    }
+  ],
+  "edges": [
+    {
+      "source": "微波炉",
+      "target": "照明",
+      "weekday_overlap": "",
+      "weekend_overlap": "[22:15,24:00]"
+    },
+    {
+      "source": "微波炉",
+      "target": "洗碗机",
+      "weekday_overlap": "[00:00,00:30]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "未知插座",
+      "target": "电暖器",
+      "weekday_overlap": "[00:45,01:15]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "电子设备",
+      "target": "电暖器",
+      "weekday_overlap": "[01:15,02:30]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "照明",
+      "target": "电暖器",
+      "weekday_overlap": "[09:45,10:30]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "照明",
+      "target": "电子设备",
+      "weekday_overlap": "",
+      "weekend_overlap": "[20:30,21:00]、[21:15,22:15]"
+    },
+    {
+      "source": "太阳能热泵",
+      "target": "浴室插座",
+      "weekday_overlap": "[11:15,11:45]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "炉灶",
+      "target": "电暖器",
+      "weekday_overlap": "[10:00,10:15]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "炉灶",
+      "target": "电子设备",
+      "weekday_overlap": "",
+      "weekend_overlap": "[21:15,21:30]"
+    },
+    {
+      "source": "炉灶",
+      "target": "照明",
+      "weekday_overlap": "[10:00,10:15]",
+      "weekend_overlap": "[21:15,21:30]"
+    },
+    {
+      "source": "冰箱",
+      "target": "电暖器",
+      "weekday_overlap": "[09:45,10:00]",
+      "weekend_overlap": ""
+    },
+    {
+      "source": "冰箱",
+      "target": "电子设备",
+      "weekday_overlap": "",
+      "weekend_overlap": "[20:30,21:00]、[21:15,22:15]"
+    },
+    {
+      "source": "冰箱",
+      "target": "照明",
+      "weekday_overlap": "[09:45,10:00]、[10:30,10:45]",
+      "weekend_overlap": "[20:30,22:15]、[22:30,23:30]"
+    },
+    {
+      "source": "冰箱",
+      "target": "炉灶",
+      "weekday_overlap": "",
+      "weekend_overlap": "[21:15,21:30]"
+    },
+    {
+      "source": "冰箱",
+      "target": "微波炉",
+      "weekday_overlap": "",
+      "weekend_overlap": "[22:30,23:30]"
+    }
+  ]
+}
