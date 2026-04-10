@@ -75,6 +75,7 @@ def ensure_session_defaults() -> None:
         "dataset_name": "",
         "selected_house": "",
         "logged_in": False,
+        "autologin_applied": False,
         "selected_day": None,
         "date_range": (),
         "chat_messages": [
@@ -1483,9 +1484,17 @@ def read_single_day_visual_data(file_path: str) -> Dict[str, pd.DataFrame]:
 def do_logout() -> None:
     st.session_state.logged_in = False
     st.session_state.selected_day = None
+    st.session_state.autologin_applied = True
+    try:
+        st.query_params.clear()
+    except Exception:
+        pass
 
 
 def try_autologin_from_query() -> None:
+    if bool(st.session_state.get("autologin_applied", False)):
+        return
+
     params = st.query_params
     autologin = str(params.get("autologin", "0")).strip().lower() in {"1", "true", "yes"}
     if not autologin:
@@ -1512,6 +1521,7 @@ def try_autologin_from_query() -> None:
             st.session_state.dataset_name = dataset
             st.session_state.selected_house = house
             st.session_state.logged_in = True
+            st.session_state.autologin_applied = True
 
 
 def sidebar_settings() -> Tuple[Dict[str, List[Dict[str, str]]], Optional[str], Optional[str]]:
