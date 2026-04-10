@@ -2,20 +2,34 @@
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 936 >nul
 
-title Zhidian Xianfeng Launcher
-cd /d "%~dp0"
+title Zhidian Yunduan Launcher
+set "SCRIPT_DIR=%~dp0"
+cd /d "%SCRIPT_DIR%"
+set "PROJECT_ROOT=%SCRIPT_DIR%.."
 
 set "APP_FILE=yunduan_app.py"
-set "REQ_FILE=requirements_zhidian_xianfeng.txt"
+set "REQ_FILE=%PROJECT_ROOT%\requirements.txt"
+
+if "%APP_DATA_ROOT%"=="" (
+    if exist "%PROJECT_ROOT%\data\按日分析结果_全部" (
+        set "APP_DATA_ROOT=%PROJECT_ROOT%\data\按日分析结果_全部"
+    ) else if exist "%PROJECT_ROOT%\data\按日分析结果" (
+        set "APP_DATA_ROOT=%PROJECT_ROOT%\data\按日分析结果"
+    ) else (
+        set "APP_DATA_ROOT=%PROJECT_ROOT%\data"
+    )
+)
 
 echo ========================================
-echo         Zhidian Xianfeng Launcher
+echo          Zhidian Yunduan Launcher
 echo ========================================
+echo.
+echo APP_DATA_ROOT: %APP_DATA_ROOT%
 echo.
 
 if not exist "%APP_FILE%" (
     echo [ERROR] %APP_FILE% not found in current folder.
-    echo Make sure this bat file, app script, and requirements file are in the same folder.
+    echo Make sure this bat file and app script are in the same folder.
     echo Current folder: %cd%
     echo.
     pause
@@ -84,7 +98,7 @@ if exist "%REQ_FILE%" (
 
 echo.
 echo [4/4] Launching Streamlit app...
-"%PYTHON_EXE%" -m streamlit run "%APP_FILE%"
+"%PYTHON_EXE%" -m streamlit run "%APP_FILE%" --server.headless true
 
 if errorlevel 1 (
     echo.

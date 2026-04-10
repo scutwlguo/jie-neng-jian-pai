@@ -1,3 +1,4 @@
+import os
 import re
 import numpy as np
 import pandas as pd
@@ -16,7 +17,14 @@ st.set_page_config(
 )
 
 SUPPORTED_DATASET_NAMES = ["REDD", "UK-DALE", "REFIT"]
-DEFAULT_ROOT = r"F:/研究生文件/节能减排/云端功率分析代码/output/按日分析结果_全部"
+DEFAULT_ROOT_CANDIDATES = [
+    os.getenv("APP_DATA_ROOT", "").strip(),
+    str((Path(__file__).resolve().parent.parent / "data" / "按日分析结果_全部")),
+    str((Path(__file__).resolve().parent.parent / "data" / "按日分析结果")),
+    str((Path(__file__).resolve().parent.parent / "data")),
+    r"F:/研究生文件/节能减排/云端功率分析代码/output/按日分析结果_全部",
+]
+DEFAULT_ROOT = ""
 LOCATION_MAP = {
     "REDD": "广州市天河区",
     "UK-DALE": "上海市浦东新区",
@@ -25,12 +33,36 @@ LOCATION_MAP = {
 }
 
 
+def resolve_initial_root() -> str:
+    for p in DEFAULT_ROOT_CANDIDATES:
+        if p and Path(p).exists() and Path(p).is_dir():
+            return str(Path(p))
+    return ""
+
+
+def resolve_dataset_dirs(root: Path) -> List[Path]:
+    if not root.exists() or not root.is_dir():
+        return []
+
+    # 情况1：总根目录（下级是 REDD/UK-DALE/REFIT）
+    dataset_dirs = [p for p in root.iterdir() if p.is_dir() and p.name in SUPPORTED_DATASET_NAMES]
+    if dataset_dirs:
+        return sorted(dataset_dirs)
+
+    # 情况2：root 本身就是某个数据集目录
+    if root.name in SUPPORTED_DATASET_NAMES:
+        return [root]
+
+    return []
+
+
 def ensure_session_defaults() -> None:
+    guessed_root = resolve_initial_root()
     defaults = {
-        "configured_root": DEFAULT_ROOT,
+        "configured_root": guessed_root,
         "selected_dataset": "",
         "sim_anchor_day": pd.Timestamp.now().strftime("%Y-%m-%d"),
-        "zhidian_app_url": "http://localhost:8501",
+        "zhidian_app_url": os.getenv("APP_ZHIDIAN_URL", "http://localhost:8501").strip(),
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -204,9 +236,8 @@ def build_logo_html() -> str:
 @st.cache_data(show_spinner=False)
 def scan_available_datasets(root_dir: str) -> List[str]:
     root = Path(root_dir)
-    if not root.exists() or not root.is_dir():
-        return []
-    return sorted([p.name for p in root.iterdir() if p.is_dir() and p.name in SUPPORTED_DATASET_NAMES])
+    dataset_dirs = resolve_dataset_dirs(root)
+    return sorted([p.name for p in dataset_dirs])
 
 
 def extract_house_number(name: str) -> str:
@@ -224,7 +255,7 @@ def scan_users(root_dir: str, selected_dataset: Optional[str] = None) -> List[Di
     if not root.exists() or not root.is_dir():
         return users
 
-    dataset_dirs = [p for p in root.iterdir() if p.is_dir() and p.name in SUPPORTED_DATASET_NAMES]
+    dataset_dirs = resolve_dataset_dirs(root)
     if selected_dataset:
         dataset_dirs = [p for p in dataset_dirs if p.name == selected_dataset]
 
