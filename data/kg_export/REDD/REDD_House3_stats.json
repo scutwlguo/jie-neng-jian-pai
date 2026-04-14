@@ -128,18 +128,6 @@
       "weekend_overlap": "[21:00,21:45]、[22:15,22:30]"
     },
     {
-      "source": "厨房插座",
-      "target": "浴室插座",
-      "weekday_overlap": "",
-      "weekend_overlap": "[12:00,12:15]"
-    },
-    {
-      "source": "厨房插座",
-      "target": "微波炉",
-      "weekday_overlap": "[11:00,11:15]",
-      "weekend_overlap": "[12:00,12:15]"
-    },
-    {
       "source": "浴室插座",
       "target": "电子设备",
       "weekday_overlap": "",
@@ -156,6 +144,18 @@
       "target": "炉灶",
       "weekday_overlap": "",
       "weekend_overlap": "[13:30,14:15]、[15:45,16:15]、[21:00,21:30]"
+    },
+    {
+      "source": "厨房插座",
+      "target": "浴室插座",
+      "weekday_overlap": "",
+      "weekend_overlap": "[12:00,12:15]"
+    },
+    {
+      "source": "厨房插座",
+      "target": "微波炉",
+      "weekday_overlap": "[11:00,11:15]",
+      "weekend_overlap": "[12:00,12:15]"
     },
     {
       "source": "微波炉",

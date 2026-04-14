@@ -1,7 +1,7 @@
 {
   "user": {
     "name": "用户6",
-    "avg_kwh": 8.819968349437254,
+    "avg_kwh": 10.393507406384712,
     "days": 25
   },
   "appliances": [
@@ -85,9 +85,9 @@
     },
     {
       "name": "空调",
-      "weekday_periods": "[02:15,02:30]、[23:15,23:45]",
-      "weekend_periods": "[00:00,00:30]、[06:45,07:00]",
-      "rated_power": 808.8182281499043
+      "weekday_periods": "[02:15,02:30]、[23:30,23:45]",
+      "weekend_periods": "[06:45,07:00]",
+      "rated_power": 1071.3158106088242
     }
   ],
   "edges": [
@@ -154,7 +154,7 @@
     {
       "source": "厨房插座",
       "target": "空调",
-      "weekday_overlap": "[23:15,23:45]",
+      "weekday_overlap": "[23:30,23:45]",
       "weekend_overlap": "[06:45,07:00]"
     },
     {
@@ -194,12 +194,6 @@
       "weekend_overlap": "[14:45,15:00]"
     },
     {
-      "source": "烘干机",
-      "target": "热水器",
-      "weekday_overlap": "[07:45,08:00]、[09:00,09:15]",
-      "weekend_overlap": "[14:45,15:30]、[17:00,17:15]"
-    },
-    {
       "source": "炉灶",
       "target": "电暖器",
       "weekday_overlap": "",
@@ -222,6 +216,12 @@
       "target": "烘干机",
       "weekday_overlap": "[09:45,10:00]",
       "weekend_overlap": ""
+    },
+    {
+      "source": "烘干机",
+      "target": "热水器",
+      "weekday_overlap": "[07:45,08:00]、[09:00,09:15]",
+      "weekend_overlap": "[14:45,15:30]、[17:00,17:15]"
     },
     {
       "source": "照明",
