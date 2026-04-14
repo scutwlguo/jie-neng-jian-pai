@@ -98,6 +98,12 @@
       "weekend_overlap": ""
     },
     {
+      "source": "太阳能热泵",
+      "target": "浴室插座",
+      "weekday_overlap": "[11:15,11:45]",
+      "weekend_overlap": ""
+    },
+    {
       "source": "照明",
       "target": "电暖器",
       "weekday_overlap": "[09:45,10:30]",
@@ -108,12 +114,6 @@
       "target": "电子设备",
       "weekday_overlap": "",
       "weekend_overlap": "[20:30,21:00]、[21:15,22:15]"
-    },
-    {
-      "source": "太阳能热泵",
-      "target": "浴室插座",
-      "weekday_overlap": "[11:15,11:45]",
-      "weekend_overlap": ""
     },
     {
       "source": "炉灶",
