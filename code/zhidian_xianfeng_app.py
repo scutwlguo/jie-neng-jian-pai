@@ -478,6 +478,12 @@ def render_house_kg_panel(user_name: str, dataset_name: str = "", house_key: str
             "color": {"color": "#8e9aaf", "highlight": "#b0bac9"},
             "width": 1.2, "arrows": "to",
             "font": {"color": "#9ca3af", "size": 11, "strokeWidth": 0},
+            "props": {
+                "类型": "关系",
+                "关系": "拥有",
+                "起点": str(user.get("name", "")),
+                "终点": app_name,
+            },
         })
 
     for r in overlaps:
@@ -493,7 +499,19 @@ def render_house_kg_panel(user_name: str, dataset_name: str = "", house_key: str
             "width": 1.4, "arrows": "to",
             "font": {"color": "#9ca3af", "size": 10, "strokeWidth": 0},
             "title": f"工作日重叠：{wd}\n周末重叠：{we}",
+            "props": {
+                "类型": "关系",
+                "关系": "同时开启",
+                "起点": str(r.get("source", "")),
+                "终点": str(r.get("target", "")),
+                "工作日重叠": str(wd),
+                "周末重叠": str(we),
+            },
         })
+
+    # 为每条边分配稳定 id，便于点击后展示边属性
+    for i, e in enumerate(edges_list):
+        e["id"] = f"EDGE::{i}"
 
     nodes_json = _json.dumps(nodes_list, ensure_ascii=False)
     edges_json = _json.dumps(edges_list, ensure_ascii=False)
@@ -529,6 +547,7 @@ body {{ background:#07142a; overflow:hidden; font-family:'Microsoft YaHei',sans-
 }}
 #props-panel .badge-user {{ background:#c4a4d6; color:#1a1a2e; }}
 #props-panel .badge-device {{ background:#e8824a; color:#1a1a2e; }}
+#props-panel .badge-edge {{ background:#8ea3c6; color:#1a1a2e; }}
 #props-panel table {{ width:100%; border-collapse:collapse; }}
 #props-panel table tr {{ border-bottom:1px solid rgba(160,170,185,0.1); }}
 #props-panel table td {{ padding:8px 14px; vertical-align:top; }}
@@ -553,6 +572,7 @@ var edgesData = {edges_json};
 // 构建属性查找表
 var propsMap = {{}};
 nodesData.forEach(function(n) {{ propsMap[n.id] = n; }});
+edgesData.forEach(function(e) {{ propsMap[e.id] = e; }});
 
 var nodes = new vis.DataSet(nodesData);
 var edges = new vis.DataSet(edgesData);
@@ -611,6 +631,24 @@ network.on('click', function(params) {{
 
         var tbody = '<table>';
         var props = nodeInfo.props;
+        for (var key in props) {{
+            if (props[key] && props[key] !== 'None' && props[key] !== '') {{
+                tbody += '<tr><td>' + key + '</td><td>' + props[key] + '</td></tr>';
+            }}
+        }}
+        tbody += '</table>';
+        document.getElementById('panel-body').innerHTML = tbody;
+        panel.style.display = 'block';
+    }} else if (params.edges.length > 0) {{
+        var edgeId = params.edges[0];
+        var edgeInfo = propsMap[edgeId];
+        if (!edgeInfo || !edgeInfo.props) {{ panel.style.display='none'; return; }}
+
+        var title = document.getElementById('panel-title');
+        title.innerHTML = '<span class="node-badge badge-edge">关系</span>边属性';
+
+        var tbody = '<table>';
+        var props = edgeInfo.props;
         for (var key in props) {{
             if (props[key] && props[key] !== 'None' && props[key] !== '') {{
                 tbody += '<tr><td>' + key + '</td><td>' + props[key] + '</td></tr>';
