@@ -611,34 +611,39 @@ def load_range_summary(house_dir: str, start_date: str, end_date: str, tier_leve
 
 @st.cache_data(show_spinner=False)
 def build_alert_records(house_dir: str) -> pd.DataFrame:
-    dates = scan_house_dates(house_dir)
-    if not dates:
-        return pd.DataFrame(columns=["date", "time", "level", "device", "message"])
-
-    rng = random.Random(abs(hash(house_dir)) % (2 ** 32))
-    picked = rng.sample(dates, k=min(len(dates), rng.randint(2, 3)))
-
-    samples = [
-        ("11:48", "高", "电热水器", "检测到中午时段连续高功率运行超过 2 小时，建议优化加热时段与温度设定。"),
-        ("19:36", "中", "大功率取暖设备", "晚间出现长时满负荷运行，建议分时启停并优化室温设定以降低能耗。"),
-        ("21:08", "高", "电动自行车充电器", "疑似充满后未及时断电，存在无效待机耗电，建议使用定时插座。"),
-        ("22:17", "中", "厨房电热设备", "夜间多台电热设备叠加运行，单位时段能耗偏高，建议错峰使用。"),
-        ("07:45", "中", "空调", "早高峰阶段压缩机频繁启动，建议提高 1-2℃ 设定温度并减少门窗开启。"),
+    # 按业务要求给出固定风险洞察（并按最新日期优先展示）
+    rows = [
+        {
+            "date": "2026-04-21",
+            "time": "07:30",
+            "level": "高",
+            "device": "电热水器",
+            "message": "检测到早上和傍晚时段连续高功率运行超过 4 小时，建议优化加热时段与温度设定，优先采用“集中加热+及时关闭”的方式。",
+        },
+        {
+            "date": "2026-04-20",
+            "time": "21:10",
+            "level": "中",
+            "device": "电饭煲",
+            "message": "检测到晚间长时间运行，可能处于保温或使用后未及时关闭状态，建议缩短保温时长并在饭后及时断电。",
+        },
+        {
+            "date": "2026-04-19",
+            "time": "23:20",
+            "level": "高",
+            "device": "空调",
+            "message": "检测到单日累计运行时长超过 12 小时，持续高负荷运行会显著增加能耗，建议开启睡眠模式并设置分时停机策略。",
+        },
     ]
 
-    rows = []
-    for i, day in enumerate(sorted(picked)):
-        time_, level, device, msg = samples[i % len(samples)]
-        rows.append(
-            {
-                "date": day.strftime("%Y-%m-%d"),
-                "time": time_,
-                "level": level,
-                "device": device,
-                "message": msg,
-            }
-        )
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return pd.DataFrame(columns=["date", "time", "level", "device", "message"])
+
+    # 最新在最上面
+    dt = pd.to_datetime(df["date"] + " " + df["time"], errors="coerce")
+    df = df.assign(_dt=dt).sort_values("_dt", ascending=False).drop(columns=["_dt"]).reset_index(drop=True)
+    return df
 
 
 def get_house_info(dataset_name: str, house_key: str) -> HouseInfo:
