@@ -2114,7 +2114,7 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
         user_prompt = st.text_area(
             "输入问题",
             label_visibility="collapsed",
-            placeholder="请输入您的问题，例如：如何减少待机能耗？",
+            placeholder="请输入您的问题，例如：最近用电情况怎么样？",
             height=118,
             key="chat_user_input",
         )
