@@ -2096,7 +2096,8 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
         """,
         unsafe_allow_html=True,
     )
-    with st.container(height=CHAT_MESSAGES_HEIGHT):
+    chat_log_container = st.container(height=CHAT_MESSAGES_HEIGHT)
+    with chat_log_container:
         for message in st.session_state.chat_messages:
             with st.chat_message(message["role"]):
                 st.write(message["content"])
@@ -2117,6 +2118,11 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
         if prompt:
             st.session_state.chat_messages.append({"role": "user", "content": prompt})
 
+            # 将“本轮新增消息”也渲染在聊天记录容器内，避免流式输出把输入框顶上去
+            with chat_log_container:
+                with st.chat_message("user"):
+                    st.write(prompt)
+
             answer = match_answer_from_qa(prompt)
             if not answer:
                 if bool(st.session_state.get("enable_chat_api", False)):
@@ -2132,8 +2138,9 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
 
             answer = beautify_assistant_text(answer)
 
-            with st.chat_message("assistant"):
-                streamed = st.write_stream(stream_text_chunks(answer))
+            with chat_log_container:
+                with st.chat_message("assistant"):
+                    streamed = st.write_stream(stream_text_chunks(answer))
 
             st.session_state.chat_messages.append({"role": "assistant", "content": str(streamed) if streamed is not None else answer})
             st.rerun()
