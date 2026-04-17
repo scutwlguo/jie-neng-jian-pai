@@ -49,7 +49,7 @@ if DMX_API_KEY_EMBEDDED and DMX_API_KEY_EMBEDDED != "PLEASE_REPLACE_WITH_YOUR_DM
 os.environ.setdefault("DMXAPI_URL", DMX_BASE_URL_EMBEDDED)
 
 # 与原拼装脚本保持一致；如需改路径，改这里即可
-DEFAULT_DAILY_JSON_ROOT = r"F:/研究生文件/节能减排/后端处理代码/output/用电行为分析_json"
+DEFAULT_DAILY_JSON_ROOT = r"F:\研究生文件\节能减排\桌面程序代码\data\用电行为分析_json"
 DEFAULT_DATASET = "REDD"
 DEFAULT_HOUSE_DIR = "REDD_House6_stats"
 
