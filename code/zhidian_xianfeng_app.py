@@ -2,6 +2,7 @@ import os
 import re
 import random
 import json
+import time
 import importlib
 from pathlib import Path
 from dataclasses import dataclass
@@ -82,7 +83,7 @@ def ensure_session_defaults() -> None:
         "chat_messages": [
             {
                 "role": "assistant",
-                "content": "您好，我是智电先锋的用电行为智能分析助手。当前对话接口尚未接入 GPT，后续可在这里提供节能建议、异常解释和设备用电分析。",
+                "content": "您好，我是智电先锋的用电智能助手。当前已接入内置问答对知识库，您可直接输入预设问题进行咨询。",
             }
         ],
     }
@@ -120,6 +121,91 @@ def resolve_house_by_account(account_input: str, houses: List[Dict[str, str]]) -
             return h.get("house_key")
 
     return None
+
+
+def _normalize_question(text: str) -> str:
+    s = (text or "").strip().lower()
+    s = re.sub(r"[\s\u3000]+", "", s)
+    s = re.sub(r"[，。！？；：、,.!?;:'\"（）()\[\]【】<>《》]", "", s)
+    return s
+
+
+@st.cache_data(show_spinner=False)
+def load_qa_pairs_from_md() -> List[Tuple[str, str]]:
+    candidates = [
+        Path(__file__).resolve().parents[1] / "data" / "问答对设计.md",
+        Path.cwd() / "data" / "问答对设计.md",
+    ]
+    qa_file = next((p for p in candidates if p.exists()), None)
+    if qa_file is None:
+        return []
+
+    text = qa_file.read_text(encoding="utf-8")
+    lines = text.splitlines()
+
+    pairs: List[Tuple[str, str]] = []
+    current_q: Optional[str] = None
+    current_a_lines: List[str] = []
+
+    def _flush_pair() -> None:
+        nonlocal current_q, current_a_lines, pairs
+        if current_q:
+            ans = "\n".join(current_a_lines).strip()
+            if ans:
+                pairs.append((current_q.strip(), ans))
+
+    for raw in lines:
+        line = raw.rstrip("\n")
+        stripped = line.strip()
+
+        if stripped.startswith("用户：") or stripped.startswith("用户:"):
+            _flush_pair()
+            current_q = stripped.split("：", 1)[1].strip() if "：" in stripped else stripped.split(":", 1)[1].strip()
+            current_a_lines = []
+            continue
+
+        if current_q is None:
+            continue
+
+        if stripped.startswith("小智：") or stripped.startswith("小智:"):
+            content = stripped.split("：", 1)[1].strip() if "：" in stripped else stripped.split(":", 1)[1].strip()
+            current_a_lines.append(content)
+            continue
+
+        current_a_lines.append(line)
+
+    _flush_pair()
+    return pairs
+
+
+def match_answer_from_qa(user_question: str) -> Optional[str]:
+    pairs = load_qa_pairs_from_md()
+    if not pairs:
+        return None
+
+    nq = _normalize_question(user_question)
+    if not nq:
+        return None
+
+    # 1) 归一化后精确匹配
+    for q, a in pairs:
+        if _normalize_question(q) == nq:
+            return a
+
+    # 2) 包含匹配（兼容少量前后缀）
+    for q, a in pairs:
+        qq = _normalize_question(q)
+        if qq and (qq in nq or nq in qq):
+            return a
+
+    return None
+
+
+def stream_text_chunks(text: str, chunk_size: int = 12, delay: float = 0.02):
+    content = text or ""
+    for i in range(0, len(content), chunk_size):
+        yield content[i:i + chunk_size]
+        time.sleep(delay)
 
 
 def _build_demo_price_24h(tier_level: int = 1) -> np.ndarray:
@@ -1840,8 +1926,6 @@ def render_chat_panel() -> None:
                 st.write(message["content"])
     st.markdown("</div>", unsafe_allow_html=True)
 
-    assistant_reply = "您好，我是智电先锋的用电行为智能分析助手。当前对话接口尚未接入 GPT，后续可在这里提供节能建议、异常解释和设备用电分析。"
-
     with st.form("chat_input_form", clear_on_submit=True):
         user_prompt = st.text_area(
             "输入问题",
@@ -1881,7 +1965,15 @@ def render_chat_panel() -> None:
         prompt = user_prompt.strip()
         if prompt:
             st.session_state.chat_messages.append({"role": "user", "content": prompt})
-            st.session_state.chat_messages.append({"role": "assistant", "content": assistant_reply})
+
+            answer = match_answer_from_qa(prompt)
+            if not answer:
+                answer = "超出问答范围"
+
+            with st.chat_message("assistant"):
+                streamed = st.write_stream(stream_text_chunks(answer))
+
+            st.session_state.chat_messages.append({"role": "assistant", "content": str(streamed) if streamed is not None else answer})
             st.rerun()
 
 def login_view(datasets: Dict[str, List[Dict[str, str]]], dataset_name: Optional[str], house_key: Optional[str]) -> None:
