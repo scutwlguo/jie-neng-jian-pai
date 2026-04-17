@@ -33,7 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent
 LLM_MODULE_PATH = BASE_DIR / "LLM_founction_set.py"
 PACKER_MODULE_PATH = BASE_DIR / "GPT用电分析输入拼装_v2.py"
 
-DEFAULT_MODEL_NAME = "qwen3.5-plus-free"
+DEFAULT_MODEL_NAME = "doubao-seed-2.0-pro-free"
 DEFAULT_PLATFORM = "dmx"
 
 # ===========================
