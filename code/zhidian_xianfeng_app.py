@@ -33,7 +33,7 @@ PRICE_PER_KWH = 0.7
 SUPPORTED_DATASET_NAMES = ["REDD", "UK-DALE", "REFIT"]
 DEFAULT_PASSWORD = "xxxx"
 CHAT_PANEL_HEIGHT = 1410
-CHAT_MESSAGES_HEIGHT = 1100
+CHAT_MESSAGES_HEIGHT = 1170
 DEFAULT_ROOT_CANDIDATES = [
     os.getenv("APP_DATA_ROOT", "").strip(),
     r"F:/研究生文件/节能减排/云端功率分析代码/output/按日分析结果_全部",
@@ -88,7 +88,7 @@ def ensure_session_defaults() -> None:
         "chat_messages": [
             {
                 "role": "assistant",
-                "content": "您好，我是智电先锋的用电智能助手。当前已接入内置问答对知识库，您可直接输入预设问题进行咨询。",
+                "content": "您好，我是智电先锋的用电智能助手，可以为您提供节能建议、异常解释和设备用电分析。",
             }
         ],
     }
@@ -292,7 +292,7 @@ def call_energy_chat_api(
 
 def beautify_assistant_text(text: str) -> str:
     s = (text or "").strip()
-    s = re.sub(r"(?m)^\s*(\d+)[、.]\s*", r"\1. ", s)
+    # 保持“1、2、3”原样，避免被 Markdown 有序列表自动续号导致编号错乱。
     s = re.sub(r"(?m)^\s*[-•]\s*", "- ", s)
     s = re.sub(r"\n{3,}", "\n\n", s)
     return s
@@ -2092,9 +2092,6 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
 
     st.markdown(
         """
-        <div class="chat-toolbar-note">
-            这里采用更接近 GPT / VSCode 的聊天交互：消息区在上，输入区固定在模块底部，发送按钮位于输入框右下角。
-        </div>
         <div class="chat-scroll-wrap">
         """,
         unsafe_allow_html=True,
@@ -2114,31 +2111,6 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
             key="chat_user_input",
         )
         send_clicked = st.form_submit_button("➤", help="发送")
-
-    # JS: 将发送按钮移入 textarea 容器内部，并设为右下角绝对定位
-    import streamlit.components.v1 as components
-    components.html("""
-    <script>
-    (function moveBtn() {
-        const doc = window.parent.document;
-        const form = doc.querySelector('div[data-testid="stForm"]');
-        if (!form) { setTimeout(moveBtn, 300); return; }
-        const btn = form.querySelector('div[data-testid="stFormSubmitButton"]');
-        const ta = form.querySelector('div[data-baseweb="textarea"]');
-        if (!btn || !ta) { setTimeout(moveBtn, 300); return; }
-        ta.style.position = 'relative';
-        btn.style.position = 'absolute';
-        btn.style.bottom = '10px';
-        btn.style.right = '10px';
-        btn.style.left = 'auto';
-        btn.style.width = 'auto';
-        btn.style.zIndex = '30';
-        btn.style.margin = '0';
-        btn.style.padding = '0';
-        ta.appendChild(btn);
-    })();
-    </script>
-    """, height=0)
 
     if send_clicked:
         prompt = user_prompt.strip()
