@@ -190,21 +190,6 @@ def _house_dir_for_api_from_house_key(house_key: str) -> str:
     return f"REDD_House{no}_stats"
 
 
-@st.cache_data(show_spinner=False, ttl=30)
-def check_energy_chat_api_health(api_url: str) -> Tuple[bool, str]:
-    base = (api_url or "").strip()
-    if not base:
-        return False, "API 地址为空"
-    health_url = base[:-5] + "/health" if base.endswith("/chat") else base.rstrip("/") + "/health"
-    try:
-        req = urllib.request.Request(url=health_url, method="GET")
-        with urllib.request.urlopen(req, timeout=4) as resp:
-            body = resp.read().decode("utf-8", errors="ignore")
-        return True, (body[:120] if body else "ok")
-    except Exception as e:
-        return False, str(e)
-
-
 def _call_energy_chat_local_direct(
     user_query: str,
     house_key: str,
@@ -1969,16 +1954,6 @@ def sidebar_settings() -> Tuple[Dict[str, List[Dict[str, str]]], Optional[str], 
             help="开启后：命中问答对仍走本地；未命中时调用后端 API。",
         )
         st.caption("API 固定策略：dataset=REDD；house=用户1~6映射；模型=dmx/qwen3.5-plus-free。")
-        if enable_chat_api:
-            ok, msg = check_energy_chat_api_health(ENERGY_CHAT_API_URL)
-            if ok:
-                st.success("API 连通正常")
-            else:
-                st.warning("API 地址不可达，当前将尝试本地直调模式（若本地依赖不完整会失败）。")
-
-        if st.session_state.get("last_chat_api_error"):
-            with st.expander("最近一次助手接口错误详情", expanded=False):
-                st.text(str(st.session_state.get("last_chat_api_error")))
 
         # 开关即时生效，不依赖“保存路径”按钮
         st.session_state.enable_chat_api = bool(enable_chat_api)

@@ -48,8 +48,12 @@ if DMX_API_KEY_EMBEDDED and DMX_API_KEY_EMBEDDED != "PLEASE_REPLACE_WITH_YOUR_DM
     os.environ["DMX_API_KEY"] = DMX_API_KEY_EMBEDDED
 os.environ.setdefault("DMXAPI_URL", DMX_BASE_URL_EMBEDDED)
 
-# 与原拼装脚本保持一致；如需改路径，改这里即可
-DEFAULT_DAILY_JSON_ROOT = r"F:\研究生文件\节能减排\桌面程序代码\data\用电行为分析_json"
+# 与原拼装脚本保持一致；优先使用相对路径，兼容云端部署
+DEFAULT_DAILY_JSON_ROOT_CANDIDATES = [
+    os.getenv("APP_DAILY_JSON_ROOT", "").strip(),
+    str(BASE_DIR.parent / "data" / "用电行为分析_json"),
+    str(BASE_DIR / "data" / "用电行为分析_json"),
+]
 DEFAULT_DATASET = "REDD"
 DEFAULT_HOUSE_DIR = "REDD_House6_stats"
 
@@ -74,6 +78,19 @@ packer_module = _load_module(PACKER_MODULE_PATH, "gpt_energy_packer_local")
 
 create_llm = llm_module.create_llm
 build_gpt_analysis_package = packer_module.build_gpt_analysis_package
+
+
+def resolve_daily_json_root() -> str:
+    for p in DEFAULT_DAILY_JSON_ROOT_CANDIDATES:
+        if not p:
+            continue
+        path = Path(p)
+        if path.exists() and path.is_dir():
+            return str(path)
+    raise FileNotFoundError(
+        "未找到用电行为分析 JSON 根目录。请确认 data/用电行为分析_json 已随项目部署，"
+        "或通过 APP_DAILY_JSON_ROOT 指定目录。"
+    )
 
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
@@ -250,24 +267,26 @@ def resolve_target_from_query(
 
 
 def load_single_day_package(dataset: str, house_dir: str, date_str: str) -> Tuple[Dict, str]:
+    daily_json_root = resolve_daily_json_root()
     package, prompt_text = build_gpt_analysis_package(
         dataset=dataset,
         house_dir=house_dir,
         pack_type="single-day",
         date=date_str,
-        daily_json_root=DEFAULT_DAILY_JSON_ROOT,
+        daily_json_root=daily_json_root,
     )
     return package, prompt_text
 
 
 def load_multi_day_package_range(dataset: str, house_dir: str, start_date: str, end_date: str) -> Tuple[Dict, str]:
+    daily_json_root = resolve_daily_json_root()
     package, prompt_text = build_gpt_analysis_package(
         dataset=dataset,
         house_dir=house_dir,
         pack_type="multi-day",
         start_date=start_date,
         end_date=end_date,
-        daily_json_root=DEFAULT_DAILY_JSON_ROOT,
+        daily_json_root=daily_json_root,
     )
     return package, prompt_text
 
