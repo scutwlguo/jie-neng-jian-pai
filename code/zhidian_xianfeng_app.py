@@ -217,11 +217,19 @@ def _estimate_hourly_kwh_from_event_ratio(hour_df: pd.DataFrame, total_kwh: floa
 def _compute_daily_tou_cost_from_sheets(daily: Dict[str, pd.DataFrame], tier_level: int = 1) -> float:
     prices = _build_demo_price_24h(tier_level=tier_level)
     total_kwh = _extract_total_kwh_from_daily_sheets(daily)
+    if total_kwh <= 0:
+        return 0.0
 
     total_df = daily.get("total_power_curve", pd.DataFrame())
     hour_df = daily.get("hour_event_ratio", pd.DataFrame())
 
     hourly_kwh = _estimate_hourly_kwh_from_total_power_curve(total_df)
+    # 关键修正：total_power_curve 的功率单位/时间单位可能与 kWh 口径不一致，
+    # 这里仅把它当作“小时分布权重”，再归一化到当日总电量，避免电费被数量级放大。
+    sum_hourly = float(hourly_kwh.sum())
+    if sum_hourly > 0:
+        hourly_kwh = hourly_kwh * (float(total_kwh) / sum_hourly)
+
     if float(hourly_kwh.sum()) <= 0:
         hourly_kwh = _estimate_hourly_kwh_from_event_ratio(hour_df, total_kwh)
     if float(hourly_kwh.sum()) <= 0 and total_kwh > 0:
