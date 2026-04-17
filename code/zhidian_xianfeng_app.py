@@ -2167,12 +2167,18 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
             if not answer:
                 if bool(st.session_state.get("enable_chat_api", False)):
                     session_id = f"web-{house_key}"
-                    answer = call_energy_chat_api(
-                        user_query=prompt,
-                        house_key=house_key,
-                        max_available_date=max_available_date,
-                        session_id=session_id,
-                    )
+                    with chat_log_container:
+                        with st.chat_message("assistant"):
+                            thinking_holder = st.empty()
+                            thinking_holder.markdown("<span style='color:#9cb1d9;'>思考中...</span>", unsafe_allow_html=True)
+                            with st.spinner("正在生成回复..."):
+                                answer = call_energy_chat_api(
+                                    user_query=prompt,
+                                    house_key=house_key,
+                                    max_available_date=max_available_date,
+                                    session_id=session_id,
+                                )
+                            thinking_holder.empty()
                 else:
                     answer = "超出问答范围"
 
