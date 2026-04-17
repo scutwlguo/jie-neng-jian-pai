@@ -2125,20 +2125,12 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
     <script>
     (function moveBtn() {
         const doc = window.parent.document;
-        const textareas = Array.from(doc.querySelectorAll('div[data-baseweb="textarea"] textarea'));
-        const inputEl = textareas.find(el => {
-            const ph = (el.getAttribute('placeholder') || '').trim();
-            return ph.includes('请输入您的问题');
-        });
-        if (!inputEl) { setTimeout(moveBtn, 300); return; }
+        const form = doc.querySelector('div[data-testid="stForm"]');
+        if (!form) { setTimeout(moveBtn, 300); return; }
+        const btn = form.querySelector('div[data-testid="stFormSubmitButton"]');
+        const ta = form.querySelector('div[data-baseweb="textarea"]');
+        if (!btn || !ta) { setTimeout(moveBtn, 300); return; }
 
-        const formEl = inputEl.closest('form');
-        const ta = inputEl.closest('div[data-baseweb="textarea"]');
-        const btn = formEl ? formEl.querySelector('div[data-testid="stFormSubmitButton"]') : null;
-        if (!formEl || !btn || !ta) { setTimeout(moveBtn, 300); return; }
-
-        ta.style.width = '100%';
-        ta.style.maxWidth = '100%';
         ta.style.position = 'relative';
         btn.style.position = 'absolute';
         btn.style.bottom = '10px';
