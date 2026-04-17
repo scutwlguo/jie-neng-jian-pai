@@ -190,6 +190,60 @@ def _house_dir_for_api_from_house_key(house_key: str) -> str:
     return f"REDD_House{no}_stats"
 
 
+@st.cache_data(show_spinner=False, ttl=30)
+def check_energy_chat_api_health(api_url: str) -> Tuple[bool, str]:
+    base = (api_url or "").strip()
+    if not base:
+        return False, "API 地址为空"
+    health_url = base[:-5] + "/health" if base.endswith("/chat") else base.rstrip("/") + "/health"
+    try:
+        req = urllib.request.Request(url=health_url, method="GET")
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            body = resp.read().decode("utf-8", errors="ignore")
+        return True, (body[:120] if body else "ok")
+    except Exception as e:
+        return False, str(e)
+
+
+def _call_energy_chat_local_direct(
+    user_query: str,
+    house_key: str,
+    start_date: str,
+    end_date: str,
+    session_id: str,
+) -> Optional[str]:
+    """本地直调 energy_chat_api.chat（无需单独启动 uvicorn）。"""
+    try:
+        mod = importlib.import_module("energy_chat_api")
+        req_cls = getattr(mod, "ChatRequest", None)
+        chat_fn = getattr(mod, "chat", None)
+        if req_cls is None or chat_fn is None:
+            return None
+
+        req_obj = req_cls(
+            session_id=session_id,
+            message=user_query,
+            dataset="REDD",
+            house_dir=_house_dir_for_api_from_house_key(house_key),
+            start_date=start_date,
+            end_date=end_date,
+            platform="dmx",
+            model_name="qwen3.5-plus-free",
+            temperature=0.2,
+            max_tokens=2048,
+        )
+        resp = chat_fn(req_obj)
+
+        if isinstance(resp, dict):
+            ans = str(resp.get("answer", "")).strip()
+            return ans or None
+        ans = str(getattr(resp, "answer", "")).strip()
+        return ans or None
+    except Exception as e:
+        st.session_state["last_chat_api_error"] = f"local_direct_failed: {e}"
+        return None
+
+
 def call_energy_chat_api(
     user_query: str,
     house_key: str,
@@ -225,9 +279,29 @@ def call_energy_chat_api(
         return answer if answer else "超出问答范围"
     except urllib.error.HTTPError as e:
         st.session_state["last_chat_api_error"] = f"HTTPError: {e}"
+        # HTTP 有响应但失败，尝试本地直调兜底
+        local_answer = _call_energy_chat_local_direct(
+            user_query=user_query,
+            house_key=house_key,
+            start_date=start_date,
+            end_date=end_date,
+            session_id=session_id,
+        )
+        if local_answer:
+            return local_answer
         return "智能助手暂时繁忙，请稍后再试。"
     except Exception as e:
         st.session_state["last_chat_api_error"] = str(e)
+        # 典型场景：127.0.0.1:8000 未启动；尝试本地直调兜底
+        local_answer = _call_energy_chat_local_direct(
+            user_query=user_query,
+            house_key=house_key,
+            start_date=start_date,
+            end_date=end_date,
+            session_id=session_id,
+        )
+        if local_answer:
+            return local_answer
         return "智能助手暂时繁忙，请稍后再试。"
 
 
@@ -1895,6 +1969,16 @@ def sidebar_settings() -> Tuple[Dict[str, List[Dict[str, str]]], Optional[str], 
             help="开启后：命中问答对仍走本地；未命中时调用后端 API。",
         )
         st.caption("API 固定策略：dataset=REDD；house=用户1~6映射；模型=dmx/qwen3.5-plus-free。")
+        if enable_chat_api:
+            ok, msg = check_energy_chat_api_health(ENERGY_CHAT_API_URL)
+            if ok:
+                st.success("API 连通正常")
+            else:
+                st.warning("API 地址不可达，当前将尝试本地直调模式（若本地依赖不完整会失败）。")
+
+        if st.session_state.get("last_chat_api_error"):
+            with st.expander("最近一次助手接口错误详情", expanded=False):
+                st.text(str(st.session_state.get("last_chat_api_error")))
 
         # 开关即时生效，不依赖“保存路径”按钮
         st.session_state.enable_chat_api = bool(enable_chat_api)
