@@ -76,6 +76,7 @@ def ensure_session_defaults() -> None:
         "selected_house": "",
         "logged_in": False,
         "autologin_applied": False,
+        "tier_level": 1,
         "selected_day": None,
         "date_range": (),
         "chat_messages": [
@@ -119,6 +120,114 @@ def resolve_house_by_account(account_input: str, houses: List[Dict[str, str]]) -
             return h.get("house_key")
 
     return None
+
+
+def _build_demo_price_24h(tier_level: int = 1) -> np.ndarray:
+    """
+    按“先分时、后阶梯”的规则构造24小时电价（元/kWh）。
+
+    分时：
+    - 峰: 0.99496875 元/kWh，时段 10-12、14-19
+    - 平: 0.58886875 元/kWh，其余平段
+    - 谷: 0.22916875 元/kWh，时段 0-8
+
+    阶梯加价：
+    - 第一档 +0.00
+    - 第二档 +0.05
+    - 第三档 +0.30
+    """
+    peak = 0.99496875
+    flat = 0.58886875
+    valley = 0.22916875
+
+    price_24h = np.full(24, flat, dtype=float)
+    price_24h[0:8] = valley
+    price_24h[10:12] = peak
+    price_24h[14:19] = peak
+
+    tier_increment_map = {1: 0.0, 2: 0.05, 3: 0.30}
+    tier_increment = tier_increment_map.get(int(tier_level), 0.0)
+    return price_24h + tier_increment
+
+
+def _extract_total_kwh_from_daily_sheets(daily: Dict[str, pd.DataFrame]) -> float:
+    total_kwh = 0.0
+    if "energy_bar_data" in daily and not daily["energy_bar_data"].empty:
+        total_kwh = pd.to_numeric(daily["energy_bar_data"].get("energy_kwh"), errors="coerce").fillna(0).sum()
+    elif "event_summary" in daily and not daily["event_summary"].empty:
+        total_kwh = pd.to_numeric(daily["event_summary"].get("energy_kwh"), errors="coerce").fillna(0).sum()
+    return float(total_kwh)
+
+
+def _estimate_hourly_kwh_from_total_power_curve(total_df: pd.DataFrame) -> np.ndarray:
+    hourly_kwh = np.zeros(24, dtype=float)
+    if total_df.empty or "T" not in total_df.columns or "总功率" not in total_df.columns:
+        return hourly_kwh
+
+    t = pd.to_numeric(total_df["T"], errors="coerce")
+    p = pd.to_numeric(total_df["总功率"], errors="coerce")
+    df = pd.DataFrame({"T": t, "P": p}).dropna()
+    if df.empty:
+        return hourly_kwh
+
+    df = df.sort_values("T").reset_index(drop=True)
+    dt = df["T"].shift(-1) - df["T"]
+    positive = dt[dt > 0]
+    fallback_dt = float(positive.median()) if not positive.empty else 1.0
+    dt = dt.fillna(fallback_dt).clip(lower=1, upper=120)
+
+    hour = np.floor(pd.to_numeric(df["T"], errors="coerce") / 60.0).clip(0, 23).astype(int)
+    energy = pd.to_numeric(df["P"], errors="coerce").fillna(0).to_numpy() * dt.to_numpy() / 60.0
+    tmp = pd.DataFrame({"hour": hour, "kwh": energy})
+    grouped = tmp.groupby("hour", as_index=True)["kwh"].sum()
+    for h, v in grouped.items():
+        if 0 <= int(h) <= 23:
+            hourly_kwh[int(h)] = float(v)
+    return hourly_kwh
+
+
+def _estimate_hourly_kwh_from_event_ratio(hour_df: pd.DataFrame, total_kwh: float) -> np.ndarray:
+    hourly_kwh = np.zeros(24, dtype=float)
+    if hour_df.empty or "hour" not in hour_df.columns or total_kwh <= 0:
+        return hourly_kwh
+
+    h = pd.to_numeric(hour_df["hour"], errors="coerce").fillna(-1).astype(int)
+    if "event_ratio" in hour_df.columns:
+        w = pd.to_numeric(hour_df["event_ratio"], errors="coerce").fillna(0.0)
+    elif "event_count" in hour_df.columns:
+        w = pd.to_numeric(hour_df["event_count"], errors="coerce").fillna(0.0)
+    else:
+        w = pd.Series(np.ones(len(hour_df)), index=hour_df.index)
+
+    tmp = pd.DataFrame({"hour": h, "w": w})
+    tmp = tmp[(tmp["hour"] >= 0) & (tmp["hour"] <= 23)]
+    if tmp.empty:
+        return hourly_kwh
+
+    grouped = tmp.groupby("hour", as_index=True)["w"].sum()
+    total_w = float(grouped.sum())
+    if total_w <= 0:
+        return hourly_kwh
+
+    for h_idx, wv in grouped.items():
+        hourly_kwh[int(h_idx)] = float(total_kwh) * float(wv) / total_w
+    return hourly_kwh
+
+
+def _compute_daily_tou_cost_from_sheets(daily: Dict[str, pd.DataFrame], tier_level: int = 1) -> float:
+    prices = _build_demo_price_24h(tier_level=tier_level)
+    total_kwh = _extract_total_kwh_from_daily_sheets(daily)
+
+    total_df = daily.get("total_power_curve", pd.DataFrame())
+    hour_df = daily.get("hour_event_ratio", pd.DataFrame())
+
+    hourly_kwh = _estimate_hourly_kwh_from_total_power_curve(total_df)
+    if float(hourly_kwh.sum()) <= 0:
+        hourly_kwh = _estimate_hourly_kwh_from_event_ratio(hour_df, total_kwh)
+    if float(hourly_kwh.sum()) <= 0 and total_kwh > 0:
+        hourly_kwh = np.full(24, float(total_kwh) / 24.0, dtype=float)
+
+    return float(np.sum(hourly_kwh * prices))
 
 
 @st.cache_data(show_spinner=False)
@@ -205,7 +314,7 @@ def load_daily_excel(file_path: str) -> Dict[str, pd.DataFrame]:
 
 
 @st.cache_data(show_spinner=False)
-def load_range_summary(house_dir: str, start_date: str, end_date: str) -> pd.DataFrame:
+def load_range_summary(house_dir: str, start_date: str, end_date: str, tier_level: int = 1) -> pd.DataFrame:
     path = Path(house_dir)
     rows = []
     start_dt = pd.to_datetime(start_date).normalize()
@@ -220,18 +329,15 @@ def load_range_summary(house_dir: str, start_date: str, end_date: str) -> pd.Dat
             continue
 
         daily = load_daily_excel(str(file))
-        total_kwh = 0.0
-        if "energy_bar_data" in daily and not daily["energy_bar_data"].empty:
-            total_kwh = pd.to_numeric(daily["energy_bar_data"].get("energy_kwh"), errors="coerce").fillna(0).sum()
-        elif "event_summary" in daily and not daily["event_summary"].empty:
-            total_kwh = pd.to_numeric(daily["event_summary"].get("energy_kwh"), errors="coerce").fillna(0).sum()
+        total_kwh = _extract_total_kwh_from_daily_sheets(daily)
+        total_cost = _compute_daily_tou_cost_from_sheets(daily, tier_level=tier_level)
 
         rows.append(
             {
                 "date": day,
                 "date_str": day.strftime("%Y-%m-%d"),
                 "total_kwh": float(total_kwh),
-                "cost": float(total_kwh) * PRICE_PER_KWH,
+                "cost": float(total_cost),
                 "file_path": str(file),
             }
         )
@@ -1575,11 +1681,17 @@ def sidebar_settings() -> Tuple[Dict[str, List[Dict[str, str]]], Optional[str], 
             value=st.session_state.kg_data_root,
             placeholder=r"例如：F:/研究生文件/节能减排/kg_export",
         )
+        tier_options = [1, 2, 3]
+        current_tier = int(st.session_state.get("tier_level", 1))
+        if current_tier not in tier_options:
+            current_tier = 1
+        tier_level = st.selectbox("电价阶梯档位", tier_options, index=tier_options.index(current_tier))
         if st.button("保存路径", use_container_width=True):
             normalized = root_dir.strip().strip('"').strip("'")
             kg_normalized = kg_root_dir.strip().strip('"').strip("'")
             st.session_state.configured_root = normalized
             st.session_state.kg_data_root = kg_normalized
+            st.session_state.tier_level = int(tier_level)
             st.cache_data.clear()
             st.success("数据路径已保存")
             st.rerun()
@@ -1640,7 +1752,7 @@ def render_login_panel(dataset_name: str, house_key: str, datasets: Dict[str, Li
 
 def render_total_card(summary_df: pd.DataFrame, compact: bool = False) -> None:
     total_kwh = float(summary_df["total_kwh"].sum()) if not summary_df.empty else 0.0
-    total_cost = total_kwh * PRICE_PER_KWH
+    total_cost = float(summary_df["cost"].sum()) if (not summary_df.empty and "cost" in summary_df.columns) else 0.0
     potential_save_kwh = total_kwh * 0.10
     potential_save_cost = total_cost * 0.10
 
@@ -1648,7 +1760,7 @@ def render_total_card(summary_df: pd.DataFrame, compact: bool = False) -> None:
     with c1:
         meter_card("总用电量", total_kwh, "kWh", "linear-gradient(135deg,#2563eb,#38bdf8)", compact=compact)
     with c2:
-        meter_card("总电费", total_cost, "元（按 0.7 元/kWh）", "linear-gradient(135deg,#16a34a,#84cc16)", compact=compact)
+        meter_card("总电费", total_cost, "元（分时+阶梯）", "linear-gradient(135deg,#16a34a,#84cc16)", compact=compact)
 
     row_gap = "4px" if compact else "6px"
     st.markdown(f"<div style='height:{row_gap}'></div>", unsafe_allow_html=True)
@@ -1890,7 +2002,12 @@ def main() -> None:
                     st.session_state.date_range = tuple(selected_range)
 
                 start_date, end_date = st.session_state.date_range
-                summary_df = load_range_summary(house_dir, str(start_date), str(end_date))
+                summary_df = load_range_summary(
+                    house_dir,
+                    str(start_date),
+                    str(end_date),
+                    tier_level=int(st.session_state.get("tier_level", 1)),
+                )
                 render_total_card(summary_df, compact=True)
 
         with layout_mid:
@@ -1919,7 +2036,12 @@ def main() -> None:
                     st.session_state.date_range = tuple(selected_range)
 
                 start_date, end_date = st.session_state.date_range
-                summary_df = load_range_summary(house_dir, str(start_date), str(end_date))
+                summary_df = load_range_summary(
+                    house_dir,
+                    str(start_date),
+                    str(end_date),
+                    tier_level=int(st.session_state.get("tier_level", 1)),
+                )
                 fig = build_daily_energy_bar(summary_df)
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -1975,7 +2097,10 @@ def main() -> None:
         with st.container(border=True, height=CHAT_PANEL_HEIGHT):
             render_chat_panel()
 
-    st.caption(f"当前用户：{house_info.display_name}（{house_info.house_id}） ｜ 电费单价：{PRICE_PER_KWH} 元/kWh")
+    st.caption(
+        f"当前用户：{house_info.display_name}（{house_info.house_id}） ｜ "
+        f"电价模式：分时+阶梯（当前第 {int(st.session_state.get('tier_level', 1))} 档）"
+    )
 
 
 if __name__ == "__main__":
