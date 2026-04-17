@@ -4,7 +4,10 @@ import random
 import json
 import time
 import importlib
+import urllib.request
+import urllib.error
 from pathlib import Path
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
@@ -39,6 +42,7 @@ DEFAULT_KG_ROOT_CANDIDATES = [
     os.getenv("APP_KG_ROOT", "").strip(),
     r"F:/研究生文件/节能减排/云端功率分析代码/output/kg_export",
 ]
+ENERGY_CHAT_API_URL = os.getenv("APP_ENERGY_CHAT_API_URL", "http://127.0.0.1:8000/chat").strip()
 
 
 # ============================================================
@@ -77,6 +81,7 @@ def ensure_session_defaults() -> None:
         "selected_house": "",
         "logged_in": False,
         "autologin_applied": False,
+        "enable_chat_api": False,
         "tier_level": 1,
         "selected_day": None,
         "date_range": (),
@@ -127,6 +132,110 @@ def _normalize_question(text: str) -> str:
     s = (text or "").strip().lower()
     s = re.sub(r"[\s\u3000]+", "", s)
     s = re.sub(r"[，。！？；：、,.!?;:'\"（）()\[\]【】<>《》]", "", s)
+    return s
+
+
+def _extract_dates_from_text_for_api(text: str) -> List[str]:
+    text = (text or "").strip()
+    if not text:
+        return []
+
+    patterns = [
+        r"(?P<y>\d{4})[-/年](?P<m>\d{1,2})[-/月](?P<d>\d{1,2})[日号]?",
+        r"(?P<y>\d{2})年(?P<m>\d{1,2})月(?P<d>\d{1,2})[日号]?",
+        r"(?P<m>\d{1,2})月(?P<d>\d{1,2})[日号]?",
+    ]
+
+    out: List[str] = []
+    for idx, p in enumerate(patterns):
+        for m in re.finditer(p, text):
+            gd = m.groupdict()
+            try:
+                if idx == 2:
+                    year = datetime.now().year
+                    month = int(gd["m"])
+                    day = int(gd["d"])
+                else:
+                    year = int(gd["y"])
+                    if year < 100:
+                        year += 2000
+                    month = int(gd["m"])
+                    day = int(gd["d"])
+                dt = datetime(year, month, day)
+                out.append(dt.strftime("%Y-%m-%d"))
+            except Exception:
+                continue
+    return sorted(set(out))
+
+
+def _resolve_api_date_window(question: str, max_date) -> Tuple[str, str]:
+    dates = _extract_dates_from_text_for_api(question)
+    if dates:
+        if len(dates) == 1:
+            return dates[0], dates[0]
+        return min(dates), max(dates)
+
+    end_dt = pd.to_datetime(max_date).normalize()
+    start_dt = end_dt - pd.Timedelta(days=6)
+    return start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")
+
+
+def _house_dir_for_api_from_house_key(house_key: str) -> str:
+    house_no = extract_house_number(house_key)
+    try:
+        no = int(house_no)
+    except Exception:
+        no = 1
+    no = min(max(no, 1), 6)
+    return f"REDD_House{no}_stats"
+
+
+def call_energy_chat_api(
+    user_query: str,
+    house_key: str,
+    max_available_date,
+    session_id: str,
+) -> str:
+    start_date, end_date = _resolve_api_date_window(user_query, max_available_date)
+    payload = {
+        "session_id": session_id,
+        "message": user_query,
+        "dataset": "REDD",
+        "house_dir": _house_dir_for_api_from_house_key(house_key),
+        "start_date": start_date,
+        "end_date": end_date,
+        "platform": "dmx",
+        "model_name": "qwen3.5-plus-free",
+        "temperature": 0.2,
+        "max_tokens": 2048,
+    }
+
+    req = urllib.request.Request(
+        url=ENERGY_CHAT_API_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            body = resp.read().decode("utf-8", errors="ignore")
+        data = json.loads(body) if body else {}
+        answer = str(data.get("answer", "")).strip()
+        return answer if answer else "超出问答范围"
+    except urllib.error.HTTPError as e:
+        st.session_state["last_chat_api_error"] = f"HTTPError: {e}"
+        return "智能助手暂时繁忙，请稍后再试。"
+    except Exception as e:
+        st.session_state["last_chat_api_error"] = str(e)
+        return "智能助手暂时繁忙，请稍后再试。"
+
+
+def beautify_assistant_text(text: str) -> str:
+    s = (text or "").strip()
+    s = re.sub(r"(?m)^\s*(\d+)[、.]\s*", r"\1. ", s)
+    s = re.sub(r"(?m)^\s*[-•]\s*", "- ", s)
+    s = re.sub(r"\n{3,}", "\n\n", s)
     return s
 
 
@@ -1780,12 +1889,23 @@ def sidebar_settings() -> Tuple[Dict[str, List[Dict[str, str]]], Optional[str], 
         if current_tier not in tier_options:
             current_tier = 1
         tier_level = st.selectbox("电价阶梯档位", tier_options, index=tier_options.index(current_tier))
+        enable_chat_api = st.toggle(
+            "启用智能助手 API 回答（非问答对问题）",
+            value=bool(st.session_state.get("enable_chat_api", False)),
+            help="开启后：命中问答对仍走本地；未命中时调用后端 API。",
+        )
+        st.caption("API 固定策略：dataset=REDD；house=用户1~6映射；模型=dmx/qwen3.5-plus-free。")
+
+        # 开关即时生效，不依赖“保存路径”按钮
+        st.session_state.enable_chat_api = bool(enable_chat_api)
+
         if st.button("保存路径", use_container_width=True):
             normalized = root_dir.strip().strip('"').strip("'")
             kg_normalized = kg_root_dir.strip().strip('"').strip("'")
             st.session_state.configured_root = normalized
             st.session_state.kg_data_root = kg_normalized
             st.session_state.tier_level = int(tier_level)
+            st.session_state.enable_chat_api = bool(enable_chat_api)
             st.cache_data.clear()
             st.success("数据路径已保存")
             st.rerun()
@@ -1883,7 +2003,7 @@ def render_alert_panel(alert_df: pd.DataFrame) -> None:
             unsafe_allow_html=True,
         )
 
-def render_chat_panel() -> None:
+def render_chat_panel(house_key: str, max_available_date) -> None:
     title_l, title_r = st.columns([3.1, 1.45])
     with title_l:
         section_title("智能用电助手")
@@ -1968,7 +2088,18 @@ def render_chat_panel() -> None:
 
             answer = match_answer_from_qa(prompt)
             if not answer:
-                answer = "超出问答范围"
+                if bool(st.session_state.get("enable_chat_api", False)):
+                    session_id = f"web-{house_key}"
+                    answer = call_energy_chat_api(
+                        user_query=prompt,
+                        house_key=house_key,
+                        max_available_date=max_available_date,
+                        session_id=session_id,
+                    )
+                else:
+                    answer = "超出问答范围"
+
+            answer = beautify_assistant_text(answer)
 
             with st.chat_message("assistant"):
                 streamed = st.write_stream(stream_text_chunks(answer))
@@ -2195,7 +2326,7 @@ def main() -> None:
 
     with right_chat:
         with st.container(border=True, height=CHAT_PANEL_HEIGHT):
-            render_chat_panel()
+            render_chat_panel(house_key=house_key, max_available_date=max_date)
 
     st.caption(
         f"当前用户：{house_info.display_name}（{house_info.house_id}） ｜ "
