@@ -2033,8 +2033,8 @@ def render_login_panel(dataset_name: str, house_key: str, datasets: Dict[str, Li
 def render_total_card(summary_df: pd.DataFrame, compact: bool = False) -> None:
     total_kwh = float(summary_df["total_kwh"].sum()) if not summary_df.empty else 0.0
     total_cost = float(summary_df["cost"].sum()) if (not summary_df.empty and "cost" in summary_df.columns) else 0.0
-    potential_save_kwh = total_kwh * 0.10
-    potential_save_cost = total_cost * 0.10
+    potential_save_kwh = total_kwh * 0.25827
+    potential_save_cost = total_cost * 0.3996
 
     c1, c2 = st.columns(2)
     with c1:
@@ -2046,9 +2046,9 @@ def render_total_card(summary_df: pd.DataFrame, compact: bool = False) -> None:
     st.markdown(f"<div style='height:{row_gap}'></div>", unsafe_allow_html=True)
     c3, c4 = st.columns(2)
     with c3:
-        meter_card("潜在节能电量", potential_save_kwh, "kWh（按 10% 估算）", "linear-gradient(135deg,#0ea5e9,#06b6d4)", compact=compact)
+        meter_card("潜在节能电量", potential_save_kwh, "kWh", "linear-gradient(135deg,#0ea5e9,#06b6d4)", compact=compact)
     with c4:
-        meter_card("潜在节能费用", potential_save_cost, "元（按 10% 估算）", "linear-gradient(135deg,#22c55e,#14b8a6)", compact=compact)
+        meter_card("潜在节能费用", potential_save_cost, "元", "linear-gradient(135deg,#22c55e,#14b8a6)", compact=compact)
 
 
 def render_alert_panel(alert_df: pd.DataFrame) -> None:
