@@ -2113,6 +2113,30 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
         )
         send_clicked = st.form_submit_button("➤", help="发送")
 
+    # 恢复原布局：将发送按钮放到输入框右下角
+    components.html("""
+    <script>
+    (function moveBtn() {
+        const doc = window.parent.document;
+        const form = doc.querySelector('div[data-testid="stForm"]');
+        if (!form) { setTimeout(moveBtn, 300); return; }
+        const btn = form.querySelector('div[data-testid="stFormSubmitButton"]');
+        const ta = form.querySelector('div[data-baseweb="textarea"]');
+        if (!btn || !ta) { setTimeout(moveBtn, 300); return; }
+        ta.style.position = 'relative';
+        btn.style.position = 'absolute';
+        btn.style.bottom = '10px';
+        btn.style.right = '10px';
+        btn.style.left = 'auto';
+        btn.style.width = 'auto';
+        btn.style.zIndex = '30';
+        btn.style.margin = '0';
+        btn.style.padding = '0';
+        ta.appendChild(btn);
+    })();
+    </script>
+    """, height=0)
+
     if send_clicked:
         prompt = user_prompt.strip()
         if prompt:
