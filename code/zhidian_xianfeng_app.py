@@ -2412,7 +2412,7 @@ def main() -> None:
             render_chat_panel(house_key=house_key, max_available_date=max_date)
 
     st.caption(
-        f"当前用户：{house_info.display_name} "
+        f"当前用户：{house_info.display_name}｜ "
         f"电价模式：分时+阶梯（当前第 {int(st.session_state.get('tier_level', 1))} 档）"
     )
 
