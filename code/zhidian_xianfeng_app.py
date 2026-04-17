@@ -2156,7 +2156,14 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
                     st.write(prompt)
 
             answer = match_answer_from_qa(prompt)
-            if not answer:
+            if answer:
+                with chat_log_container:
+                    with st.chat_message("assistant"):
+                        thinking_holder = st.empty()
+                        thinking_holder.markdown("<span style='color:#9cb1d9;'>思考中...</span>", unsafe_allow_html=True)
+                        time.sleep(5)
+                        thinking_holder.empty()
+            else:
                 if bool(st.session_state.get("enable_chat_api", False)):
                     session_id = f"web-{house_key}"
                     with chat_log_container:
