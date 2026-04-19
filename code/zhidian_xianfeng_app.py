@@ -2075,27 +2075,43 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
         section_title("智能用电助手")
     with title_r:
         with st.popover("导出报告", use_container_width=True):
-            report_path = st.text_input(
-                "建议分析报告保存路径（txt）",
-                value="",
-                placeholder=r"例如：F:/研究生文件/节能减排/云端功率分析代码/output/chat_report.txt",
-                key="chat_report_path",
-            )
-            if st.button("下载建议分析报告", use_container_width=True):
-                if not report_path.strip():
-                    st.warning("请先输入报告保存路径。")
-                else:
+            report_candidates = [
+                Path(__file__).resolve().parents[1] / "data" / "个性化节能分析报告.md",
+                Path.cwd() / "data" / "个性化节能分析报告.md",
+            ]
+            report_file = next((p for p in report_candidates if p.exists()), None)
+
+            if report_file is None:
+                st.warning("未找到报告文件：data/个性化节能分析报告.md")
+            else:
+                report_content = report_file.read_text(encoding="utf-8")
+                default_save_path = r"C:/个性化节能分析报告.md"
+                save_path_text = st.text_input(
+                    "建议分析报告保存路径",
+                    value=default_save_path,
+                    placeholder=r"例如：C:/个性化节能分析报告.md",
+                    key="chat_report_save_path",
+                )
+
+                if st.button("保存到指定路径", use_container_width=True):
                     try:
-                        save_path = Path(report_path.strip().strip('"').strip("'"))
-                        save_path.parent.mkdir(parents=True, exist_ok=True)
-                        lines = ["智电先锋 - 用电行为建议分析报告", "=" * 36, ""]
-                        for msg in st.session_state.chat_messages:
-                            role = "用户" if msg["role"] == "user" else "助手"
-                            lines.append(f"[{role}] {msg['content']}")
-                        save_path.write_text("\n".join(lines), encoding="utf-8")
-                        st.success(f"报告已保存：{save_path}")
+                        save_path = Path((save_path_text or "").strip().strip('"').strip("'"))
+                        if not str(save_path):
+                            st.warning("请先输入保存路径。")
+                        else:
+                            save_path.parent.mkdir(parents=True, exist_ok=True)
+                            save_path.write_text(report_content, encoding="utf-8")
+                            st.success(f"报告已保存到：{save_path}")
                     except Exception as e:
                         st.error(f"保存失败：{e}")
+
+                st.download_button(
+                    "下载建议分析报告",
+                    data=report_content,
+                    file_name="个性化节能分析报告.md",
+                    mime="text/markdown",
+                    use_container_width=True,
+                )
 
     st.markdown(
         """
