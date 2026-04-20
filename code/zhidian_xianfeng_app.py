@@ -200,6 +200,8 @@ def _call_energy_chat_local_direct(
     """本地直调 energy_chat_api.chat（无需单独启动 uvicorn）。"""
     try:
         mod = importlib.import_module("energy_chat_api")
+        # 避免模块缓存导致配置更新后不生效（如切换阿里云变量名）
+        mod = importlib.reload(mod)
         req_cls = getattr(mod, "ChatRequest", None)
         chat_fn = getattr(mod, "chat", None)
         if req_cls is None or chat_fn is None:
@@ -212,8 +214,8 @@ def _call_energy_chat_local_direct(
             house_dir=_house_dir_for_api_from_house_key(house_key),
             start_date=start_date,
             end_date=end_date,
-            platform="dmx",
-            model_name="qwen3.5-plus-free",
+            platform="aliyun",
+            model_name="qwen-turbo",
             temperature=0.2,
             max_tokens=2048,
         )
@@ -243,8 +245,8 @@ def call_energy_chat_api(
         "house_dir": _house_dir_for_api_from_house_key(house_key),
         "start_date": start_date,
         "end_date": end_date,
-        "platform": "dmx",
-        "model_name": "qwen3.5-plus-free",
+        "platform": "aliyun",
+        "model_name": "qwen-turbo",
         "temperature": 0.2,
         "max_tokens": 2048,
     }
@@ -263,7 +265,15 @@ def call_energy_chat_api(
         answer = str(data.get("answer", "")).strip()
         return answer if answer else "超出问答范围"
     except urllib.error.HTTPError as e:
-        st.session_state["last_chat_api_error"] = f"HTTPError: {e}"
+        err_body = ""
+        try:
+            err_body = e.read().decode("utf-8", errors="ignore")
+            err_data = json.loads(err_body) if err_body else {}
+            err_detail = str(err_data.get("detail", "")).strip()
+        except Exception:
+            err_detail = ""
+
+        st.session_state["last_chat_api_error"] = f"HTTPError: {e}; detail={err_detail or err_body}"
         # HTTP 有响应但失败，尝试本地直调兜底
         local_answer = _call_energy_chat_local_direct(
             user_query=user_query,
@@ -274,6 +284,10 @@ def call_energy_chat_api(
         )
         if local_answer:
             return local_answer
+        if err_detail:
+            return f"智能助手调用失败：{err_detail}"
+        if err_body:
+            return f"智能助手调用失败：{err_body}"
         return "智能助手暂时繁忙，请稍后再试。"
     except Exception as e:
         st.session_state["last_chat_api_error"] = str(e)
@@ -1960,7 +1974,7 @@ def sidebar_settings() -> Tuple[Dict[str, List[Dict[str, str]]], Optional[str], 
             value=bool(st.session_state.get("enable_chat_api", False)),
             help="开启后：命中问答对仍走本地；未命中时调用后端 API。",
         )
-        st.caption("API 固定策略：dataset=REDD；house=用户1~6映射；模型=dmx/qwen3.5-plus-free。")
+        st.caption("API 固定策略：dataset=REDD；house=用户1~6映射；模型=aliyun/qwen-turbo。")
 
         # 开关即时生效，不依赖“保存路径”按钮
         st.session_state.enable_chat_api = bool(enable_chat_api)

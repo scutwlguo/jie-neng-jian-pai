@@ -44,7 +44,7 @@ DEFAULT_PLATFORM = "aliyun"
 ALIYUN_API_KEY_EMBEDDED = "sk-d201a922f3d0420fbeb79e687243fe36"
 ALIYUN_BASE_URL_EMBEDDED = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-if ALIYUN_API_KEY_EMBEDDED and ALIYUN_API_KEY_EMBEDDED != "sk-d201a922f3d0420fbeb79e687243fe36":
+if ALIYUN_API_KEY_EMBEDDED and ALIYUN_API_KEY_EMBEDDED != "PLEASE_REPLACE_WITH_YOUR_ALIYUN_API_KEY":
     # create_llm(platform='aliyun') 读取 DASHSCOPE_API_KEY
     os.environ["DASHSCOPE_API_KEY"] = ALIYUN_API_KEY_EMBEDDED
     # 兼容保留：若别处仍走 dmx 分支，也能复用同一套 DashScope 兼容地址
