@@ -2100,6 +2100,7 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
                 st.warning("未找到报告文件：data/个性化节能分析报告.pdf")
             else:
                 report_content = report_file.read_bytes()
+                st.caption(f"当前导出源文件：{report_file.name}")
                 default_save_path = r"C:/个性化节能分析报告.pdf"
                 save_path_text = st.text_input(
                     "建议分析报告保存路径",
