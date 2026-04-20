@@ -17,6 +17,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
+from model_config import FIXED_MODEL_NAME, FIXED_PLATFORM
 
 
 # ============================================================
@@ -214,8 +215,8 @@ def _call_energy_chat_local_direct(
             house_dir=_house_dir_for_api_from_house_key(house_key),
             start_date=start_date,
             end_date=end_date,
-            platform="aliyun",
-            model_name="qwen-turbo",
+            platform=FIXED_PLATFORM,
+            model_name=FIXED_MODEL_NAME,
             temperature=0.2,
             max_tokens=2048,
         )
@@ -245,8 +246,8 @@ def call_energy_chat_api(
         "house_dir": _house_dir_for_api_from_house_key(house_key),
         "start_date": start_date,
         "end_date": end_date,
-        "platform": "aliyun",
-        "model_name": "qwen-turbo",
+        "platform": FIXED_PLATFORM,
+        "model_name": FIXED_MODEL_NAME,
         "temperature": 0.2,
         "max_tokens": 2048,
     }
@@ -1974,7 +1975,7 @@ def sidebar_settings() -> Tuple[Dict[str, List[Dict[str, str]]], Optional[str], 
             value=bool(st.session_state.get("enable_chat_api", False)),
             help="开启后：命中问答对仍走本地；未命中时调用后端 API。",
         )
-        st.caption("API 固定策略：dataset=REDD；house=用户1~6映射；模型=aliyun/qwen-turbo。")
+        st.caption(f"API 固定策略：dataset=REDD；house=用户1~6映射；模型={FIXED_PLATFORM}/{FIXED_MODEL_NAME}。")
 
         # 开关即时生效，不依赖“保存路径”按钮
         st.session_state.enable_chat_api = bool(enable_chat_api)

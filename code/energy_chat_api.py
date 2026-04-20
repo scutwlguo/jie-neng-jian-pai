@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from model_config import FIXED_MODEL_NAME, FIXED_PLATFORM
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -33,8 +34,8 @@ BASE_DIR = Path(__file__).resolve().parent
 LLM_MODULE_PATH = BASE_DIR / "LLM_founction_set.py"
 PACKER_MODULE_PATH = BASE_DIR / "GPT用电分析输入拼装_v2.py"
 
-DEFAULT_MODEL_NAME = "qwen-turbo"
-DEFAULT_PLATFORM = "aliyun"
+DEFAULT_MODEL_NAME = FIXED_MODEL_NAME
+DEFAULT_PLATFORM = FIXED_PLATFORM
 
 # ================================
 # 阿里云 DashScope 固定模型配置（内嵌）
@@ -455,7 +456,7 @@ class ChatRequest(BaseModel):
     start_date: str = Field(default="2026-04-16", description="多天分析起始日期 YYYY-MM-DD")
     end_date: str = Field(default="2026-04-22", description="多天分析结束日期 YYYY-MM-DD")
     platform: str = Field(default=DEFAULT_PLATFORM, description="兼容字段（实际固定 aliyun）")
-    model_name: str = Field(default=DEFAULT_MODEL_NAME, description="兼容字段（实际固定 qwen-turbo）")
+    model_name: str = Field(default=DEFAULT_MODEL_NAME, description="兼容字段（实际固定 qwen3.6-plus）")
     temperature: float = Field(default=0.2, description="推荐低温度，保证分析稳定")
     max_tokens: int = Field(default=2048, description="最大输出 token")
 
