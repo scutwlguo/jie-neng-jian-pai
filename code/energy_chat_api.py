@@ -36,17 +36,22 @@ PACKER_MODULE_PATH = BASE_DIR / "GPT用电分析输入拼装_v2.py"
 DEFAULT_MODEL_NAME = "qwen3.6-plus"
 DEFAULT_PLATFORM = "aliyun"
 
-# ===========================
-# DMX 固定模型配置（内嵌）
-# ===========================
+# ================================
+# 阿里云 DashScope 固定模型配置（内嵌）
+# ================================
 # 说明：按你的要求把密钥写入代码。
 # 建议：不要把真实密钥提交到公开仓库，生产环境建议改为 Streamlit Secrets。
-DMX_API_KEY_EMBEDDED = "sk-d201a922f3d0420fbeb79e687243fe36"
-DMX_BASE_URL_EMBEDDED = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+ALIYUN_API_KEY_EMBEDDED = "sk-d201a922f3d0420fbeb79e687243fe36"
+ALIYUN_BASE_URL_EMBEDDED = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-if DMX_API_KEY_EMBEDDED and DMX_API_KEY_EMBEDDED != "PLEASE_REPLACE_WITH_YOUR_DMX_API_KEY":
-    os.environ["DMX_API_KEY"] = DMX_API_KEY_EMBEDDED
-os.environ.setdefault("DMXAPI_URL", DMX_BASE_URL_EMBEDDED)
+if ALIYUN_API_KEY_EMBEDDED and ALIYUN_API_KEY_EMBEDDED != "sk-d201a922f3d0420fbeb79e687243fe36":
+    # create_llm(platform='aliyun') 读取 DASHSCOPE_API_KEY
+    os.environ["DASHSCOPE_API_KEY"] = ALIYUN_API_KEY_EMBEDDED
+    # 兼容保留：若别处仍走 dmx 分支，也能复用同一套 DashScope 兼容地址
+    os.environ.setdefault("DMX_API_KEY", ALIYUN_API_KEY_EMBEDDED)
+
+os.environ.setdefault("ALIYUN_BASE_URL", ALIYUN_BASE_URL_EMBEDDED)
+os.environ.setdefault("DMXAPI_URL", ALIYUN_BASE_URL_EMBEDDED)
 
 # 与原拼装脚本保持一致；优先使用相对路径，兼容云端部署
 DEFAULT_DAILY_JSON_ROOT_CANDIDATES = [
@@ -449,8 +454,8 @@ class ChatRequest(BaseModel):
     house_dir: str = Field(default=DEFAULT_HOUSE_DIR, description="默认 REDD_House6_stats")
     start_date: str = Field(default="2026-04-16", description="多天分析起始日期 YYYY-MM-DD")
     end_date: str = Field(default="2026-04-22", description="多天分析结束日期 YYYY-MM-DD")
-    platform: str = Field(default=DEFAULT_PLATFORM, description="兼容字段（实际固定 dmx）")
-    model_name: str = Field(default=DEFAULT_MODEL_NAME, description="兼容字段（实际固定 qwen3.5-plus-free）")
+    platform: str = Field(default=DEFAULT_PLATFORM, description="兼容字段（实际固定 aliyun）")
+    model_name: str = Field(default=DEFAULT_MODEL_NAME, description="兼容字段（实际固定 qwen-plus）")
     temperature: float = Field(default=0.2, description="推荐低温度，保证分析稳定")
     max_tokens: int = Field(default=2048, description="最大输出 token")
 
@@ -491,6 +496,12 @@ def chat(req: ChatRequest):
     fixed_platform = DEFAULT_PLATFORM
     fixed_model_name = DEFAULT_MODEL_NAME
 
+    if fixed_platform == "aliyun" and not os.getenv("DASHSCOPE_API_KEY"):
+        raise HTTPException(
+            status_code=400,
+            detail="缺少阿里云密钥：请配置 DASHSCOPE_API_KEY（或检查内嵌 ALIYUN_API_KEY_EMBEDDED）。",
+        )
+
     llm = create_llm(
         platform=fixed_platform,
         model_name=fixed_model_name,
@@ -498,7 +509,10 @@ def chat(req: ChatRequest):
         max_tokens=req.max_tokens,
     )
     if llm is None:
-        raise HTTPException(status_code=400, detail=f"模型初始化失败，请检查 DMX 配置（platform={fixed_platform}, model={fixed_model_name}）")
+        raise HTTPException(
+            status_code=400,
+            detail=f"模型初始化失败，请检查配置（platform={fixed_platform}, model={fixed_model_name}）。",
+        )
 
     resolved_target = dict(target)
     resolved_target["platform"] = fixed_platform
