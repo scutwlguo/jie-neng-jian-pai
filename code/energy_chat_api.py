@@ -455,7 +455,7 @@ class ChatRequest(BaseModel):
     start_date: str = Field(default="2026-04-16", description="多天分析起始日期 YYYY-MM-DD")
     end_date: str = Field(default="2026-04-22", description="多天分析结束日期 YYYY-MM-DD")
     platform: str = Field(default=DEFAULT_PLATFORM, description="兼容字段（实际固定 aliyun）")
-    model_name: str = Field(default=DEFAULT_MODEL_NAME, description="兼容字段（实际固定 qwen-plus）")
+    model_name: str = Field(default=DEFAULT_MODEL_NAME, description="兼容字段（实际固定 qwen-turbo）")
     temperature: float = Field(default=0.2, description="推荐低温度，保证分析稳定")
     max_tokens: int = Field(default=2048, description="最大输出 token")
 
