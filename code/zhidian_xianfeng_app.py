@@ -2091,20 +2091,20 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
     with title_r:
         with st.popover("导出报告", use_container_width=True):
             report_candidates = [
-                Path(__file__).resolve().parents[1] / "data" / "个性化节能分析报告.md",
-                Path.cwd() / "data" / "个性化节能分析报告.md",
+                Path(__file__).resolve().parents[1] / "data" / "个性化节能分析报告.pdf",
+                Path.cwd() / "data" / "个性化节能分析报告.pdf",
             ]
             report_file = next((p for p in report_candidates if p.exists()), None)
 
             if report_file is None:
-                st.warning("未找到报告文件：data/个性化节能分析报告.md")
+                st.warning("未找到报告文件：data/个性化节能分析报告.pdf")
             else:
-                report_content = report_file.read_text(encoding="utf-8")
-                default_save_path = r"C:/个性化节能分析报告.md"
+                report_content = report_file.read_bytes()
+                default_save_path = r"C:/个性化节能分析报告.pdf"
                 save_path_text = st.text_input(
                     "建议分析报告保存路径",
                     value=default_save_path,
-                    placeholder=r"例如：C:/个性化节能分析报告.md",
+                    placeholder=r"例如：C:/个性化节能分析报告.pdf",
                     key="chat_report_save_path",
                 )
 
@@ -2115,7 +2115,7 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
                             st.warning("请先输入保存路径。")
                         else:
                             save_path.parent.mkdir(parents=True, exist_ok=True)
-                            save_path.write_text(report_content, encoding="utf-8")
+                            save_path.write_bytes(report_content)
                             st.success(f"报告已保存到：{save_path}")
                     except Exception as e:
                         st.error(f"保存失败：{e}")
@@ -2123,8 +2123,8 @@ def render_chat_panel(house_key: str, max_available_date) -> None:
                 st.download_button(
                     "下载建议分析报告",
                     data=report_content,
-                    file_name="个性化节能分析报告.md",
-                    mime="text/markdown",
+                    file_name="个性化节能分析报告.pdf",
+                    mime="application/pdf",
                     use_container_width=True,
                 )
 
