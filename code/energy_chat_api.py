@@ -41,8 +41,8 @@ DEFAULT_PLATFORM = "aliyun"
 # ===========================
 # 说明：按你的要求把密钥写入代码。
 # 建议：不要把真实密钥提交到公开仓库，生产环境建议改为 Streamlit Secrets。
-DMX_API_KEY_EMBEDDED = "sk-7MZYmXJi7P0Pnfcz3cN1GMIcLJtpjN7eTBqJN4ki1bywG0bj"
-DMX_BASE_URL_EMBEDDED = "https://www.dmxapi.cn/v1"
+DMX_API_KEY_EMBEDDED = "sk-d201a922f3d0420fbeb79e687243fe36"
+DMX_BASE_URL_EMBEDDED = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 if DMX_API_KEY_EMBEDDED and DMX_API_KEY_EMBEDDED != "PLEASE_REPLACE_WITH_YOUR_DMX_API_KEY":
     os.environ["DMX_API_KEY"] = DMX_API_KEY_EMBEDDED
