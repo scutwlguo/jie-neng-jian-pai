@@ -9,12 +9,35 @@ from urllib.parse import urlencode
 from typing import Dict, List, Optional
 
 
+def apply_streamlit_secrets_to_env() -> None:
+    """Expose Streamlit Cloud secrets as environment variables for shared modules."""
+    secret_keys = (
+        "DASHSCOPE_API_KEY",
+        "APP_LLM_PLATFORM",
+        "APP_LLM_MODEL_NAME",
+        "ALIYUN_BASE_URL",
+        "DMX_API_KEY",
+        "DMXAPI_URL",
+        "APP_ENERGY_CHAT_API_URL",
+    )
+    try:
+        secrets = st.secrets
+        for key in secret_keys:
+            value = secrets.get(key)
+            if value is not None and str(value).strip():
+                os.environ[key] = str(value).strip()
+    except Exception:
+        # No local secrets file is fine; .env and system environment variables still work.
+        return
+
+
 st.set_page_config(
     page_title="智电先锋云端",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+apply_streamlit_secrets_to_env()
 
 SUPPORTED_DATASET_NAMES = ["REDD", "UK-DALE", "REFIT"]
 DEFAULT_ROOT_CANDIDATES = [

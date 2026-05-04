@@ -38,21 +38,14 @@ DEFAULT_MODEL_NAME = FIXED_MODEL_NAME
 DEFAULT_PLATFORM = FIXED_PLATFORM
 
 # ================================
-# 阿里云 DashScope 固定模型配置（内嵌）
+# 阿里云 DashScope 固定模型配置
 # ================================
-# 说明：按你的要求把密钥写入代码。
-# 建议：不要把真实密钥提交到公开仓库，生产环境建议改为 Streamlit Secrets。
-ALIYUN_API_KEY_EMBEDDED = "sk-d201a922f3d0420fbeb79e687243fe36"
-ALIYUN_BASE_URL_EMBEDDED = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+# 密钥从环境变量读取。Streamlit Cloud 部署时由 zhidian_xianfeng_app.py
+# 将 st.secrets 写入运行时环境变量；本地也可使用 .env 或系统环境变量。
+ALIYUN_BASE_URL_DEFAULT = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-if ALIYUN_API_KEY_EMBEDDED and ALIYUN_API_KEY_EMBEDDED != "PLEASE_REPLACE_WITH_YOUR_ALIYUN_API_KEY":
-    # create_llm(platform='aliyun') 读取 DASHSCOPE_API_KEY
-    os.environ["DASHSCOPE_API_KEY"] = ALIYUN_API_KEY_EMBEDDED
-    # 兼容保留：若别处仍走 dmx 分支，也能复用同一套 DashScope 兼容地址
-    os.environ.setdefault("DMX_API_KEY", ALIYUN_API_KEY_EMBEDDED)
-
-os.environ.setdefault("ALIYUN_BASE_URL", ALIYUN_BASE_URL_EMBEDDED)
-os.environ.setdefault("DMXAPI_URL", ALIYUN_BASE_URL_EMBEDDED)
+os.environ.setdefault("ALIYUN_BASE_URL", ALIYUN_BASE_URL_DEFAULT)
+os.environ.setdefault("DMXAPI_URL", ALIYUN_BASE_URL_DEFAULT)
 
 # 与原拼装脚本保持一致；优先使用相对路径，兼容云端部署
 DEFAULT_DAILY_JSON_ROOT_CANDIDATES = [
@@ -500,7 +493,7 @@ def chat(req: ChatRequest):
     if fixed_platform == "aliyun" and not os.getenv("DASHSCOPE_API_KEY"):
         raise HTTPException(
             status_code=400,
-            detail="缺少阿里云密钥：请配置 DASHSCOPE_API_KEY（或检查内嵌 ALIYUN_API_KEY_EMBEDDED）。",
+            detail="缺少阿里云密钥：请在 Streamlit Secrets、.env 或系统环境变量中配置 DASHSCOPE_API_KEY。",
         )
 
     llm = create_llm(
